@@ -44,15 +44,14 @@ public static partial class SqlRetryHelper
     /// </summary>
     private static ValueTask<T> WithSqlRetryAsync<T>(
         this ISqlConnectionFactory factory,
-        Func<DbConnection, CancellationToken, Task<T>> action,
+        Func<IDbConnection, CancellationToken, Task<T>> action,
         ResiliencePipeline? pipeline = null,
         CancellationToken ct = default)
     {
         var pipe = pipeline ?? CreateTimeoutRetryPipeline();
         return pipe.ExecuteAsync(async token =>
         {
-            using var conn = factory.Create();
-            await conn.OpenAsync(token);
+            using var conn = await factory.OpenAsync(token);
             return await action(conn, token);
         }, ct);
     }

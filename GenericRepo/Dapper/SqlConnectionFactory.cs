@@ -1,12 +1,11 @@
 ﻿using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
-using System;
+using System.Data;
 
 namespace GenericRepo.Dapper;
 
 public interface ISqlConnectionFactory
 {
-    SqlConnection Create();
+    Task<IDbConnection> OpenAsync(CancellationToken ct = default);
 }
 
 /// <summary>
@@ -25,13 +24,18 @@ public interface ISqlConnectionFactory
 /// </summary>
 public sealed class SqlConnectionFactory : ISqlConnectionFactory
 {
-    private readonly string _connectionString;
+    private readonly string _cs;
 
     public SqlConnectionFactory(IConfiguration cfg)
     {
-        _connectionString = cfg.GetConnectionString("PSM_WebConnectionString")
+        _cs = cfg.GetConnectionString("ConnectionString")
             ?? throw new InvalidOperationException("Missing connection string.");
     }
 
-    public SqlConnection Create() => new SqlConnection(_connectionString);
+    public async Task<IDbConnection> OpenAsync(CancellationToken ct = default)
+    {
+        var con = new SqlConnection(_cs);
+        await con.OpenAsync(ct);
+        return con;
+    }
 }
